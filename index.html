@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Foto Jadi Link</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 600px;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 28px;
+        }
+        
+        p {
+            margin-bottom: 25px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 25px;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #f9f9ff;
+        }
+        
+        .upload-area i {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .upload-area p {
+            margin-bottom: 0;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .preview-container {
+            margin: 25px 0;
+            display: none;
+        }
+        
+        .preview-container img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .link-container {
+            margin: 25px 0;
+            display: none;
+        }
+        
+        .link-box {
+            display: flex;
+            margin-top: 15px;
+        }
+        
+        .link-box input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 14px;
+        }
+        
+        .link-box button {
+            border-radius: 0 4px 4px 0;
+            padding: 12px 15px;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .notice {
+            margin-top: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: left;
+        }
+        
+        .notice h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .notice ul {
+            padding-left: 20px;
+            color: #666;
+        }
+        
+        .notice li {
+            margin-bottom: 8px;
+        }
+        
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .upload-area {
+                padding: 20px;
+            }
+            
+            .link-box {
+                flex-direction: column;
+            }
+            
+            .link-box input {
+                border-radius: 4px;
+                margin-bottom: 10px;
+            }
+            
+            .link-box button {
+                border-radius: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-cloud-upload-alt"></i> Upload Foto Jadi Link</h1>
+        <p>Unggah foto Anda dan dapatkan link yang dapat dibagikan dalam sekejap!</p>
+        
+        <div class="upload-area" id="upload-area">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Klik di sini atau seret foto ke area ini</p>
+            <button class="btn">Pilih Foto</button>
+            <input type="file" id="file-input" accept="image/*">
+        </div>
+        
+        <div class="progress-bar" id="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        
+        <div class="preview-container" id="preview-container">
+            <h3>Pratinjau Foto</h3>
+            <img id="preview-image" src="" alt="Pratinjau">
+        </div>
+        
+        <button class="btn" id="upload-btn" disabled>Upload Foto</button>
+        
+        <div class="success-message" id="success-message">
+            <i class="fas fa-check-circle"></i> Foto berhasil diupload! Link telah disalin ke clipboard.
+        </div>
+        
+        <div class="link-container" id="link-container">
+            <h3>Link Foto Anda</h3>
+            <p>Salin link berikut untuk berbagi foto:</p>
+            <div class="link-box">
+                <input type="text" id="link-output" readonly>
+                <button class="btn" id="copy-btn">Salin</button>
+            </div>
+        </div>
+        
+        <div class="notice">
+            <h3>Informasi Penting:</h3>
+            <ul>
+                <li>Hanya file gambar (JPG, PNG, GIF) yang didukung</li>
+                <li>Maksimum ukuran file: 5MB</li>
+                <li>File akan dihapus secara otomatis setelah 30 hari</li>
+                <li>Layanan ini menggunakan Vercel Blob Storage untuk penyimpanan</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('file-input');
+            const uploadArea = document.getElementById('upload-area');
+            const uploadBtn = document.getElementById('upload-btn');
+            const previewContainer = document.getElementById('preview-container');
+            const previewImage = document.getElementById('preview-image');
+            const linkContainer = document.getElementById('link-container');
+            const linkOutput = document.getElementById('link-output');
+            const copyBtn = document.getElementById('copy-btn');
+            const progressBar = document.getElementById('progress-bar');
+            const progress = document.getElementById('progress');
+            const successMessage = document.getElementById('success-message');
+            
+            let selectedFile = null;
+            
+            // Event listeners untuk area upload
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    handleFile(fileInput.files[0]);
+                }
+            });
+            
+            uploadBtn.addEventListener('click', uploadFile);
+            
+            copyBtn.addEventListener('click', () => {
+                linkOutput.select();
+                document.execCommand('copy');
+                
+                // Tampilkan pesan sukses
+                successMessage.style.display = 'block';
+                
+                // Sembunyikan pesan setelah 3 detik
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 3000);
+            });
+            
+            function handleFile(file) {
+                // Validasi tipe file
+                if (!file.type.match('image.*')) {
+                    alert('Hanya file gambar yang diizinkan!');
+                    return;
+                }
+                
+                // Validasi ukuran file (maks 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Ukuran file tidak boleh lebih dari 5MB!');
+                    return;
+                }
+                
+                selectedFile = file;
+                
+                // Tampilkan preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                
+                // Aktifkan tombol upload
+                uploadBtn.disabled = false;
+                
+                // Sembunyikan link container jika ada
+                linkContainer.style.display = 'none';
+                successMessage.style.display = 'none';
+            }
+            
+            function uploadFile() {
+                if (!selectedFile) return;
+                
+                // Tampilkan progress bar
+                progressBar.style.display = 'block';
+                progress.style.width = '0%';
+                uploadBtn.disabled = true;
+                
+                // Simulasi upload (dalam implementasi nyata, ini akan mengupload ke Vercel Blob Storage)
+                simulateUpload();
+            }
+            
+            function simulateUpload() {
+                let progressValue = 0;
+                const interval = setInterval(() => {
+                    progressValue += 5;
+                    progress.style.width = `${progressValue}%`;
+                    
+                    if (progressValue >= 100) {
+                        clearInterval(interval);
+                        
+                        // Simulasi link yang dihasilkan
+                        // Dalam implementasi nyata, ini akan menjadi URL dari Vercel Blob Storage
+                        const domain = "https://vercel-blob-store.com";
+                        const randomId = Math.random().toString(36).substring(2, 10);
+                        const mockLink = `${domain}/uploads/${randomId}_${selectedFile.name}`;
+                        linkOutput.value = mockLink;
+                        linkContainer.style.display = 'block';
+                        
+                        // Sembunyikan progress bar
+                        setTimeout(() => {
+                            progressBar.style.display = 'none';
+                        }, 500);
+                        
+                        // Otomatis salin link ke clipboard
+                        linkOutput.select();
+                        document.execCommand('copy');
+                        
+                        // Tampilkan pesan sukses
+                        successMessage.style.display = 'block';
+                        
+                        // Reset form setelah 5 detik
+                        setTimeout(() => {
+                            successMessage.style.display = 'none';
+                            previewContainer.style.display = 'none';
+                            linkContainer.style.display = 'none';
+                            fileInput.value = '';
+                            uploadBtn.disabled = true;
+                            selectedFile = null;
+                        }, 5000);
+                    }
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>
