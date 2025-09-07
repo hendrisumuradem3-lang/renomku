@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Foto Jadi Link (Vercel Blob)</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+      body { min-height: 100vh; display: grid; place-items: center; padding: 40px 16px; background: linear-gradient(135deg, #667eea, #764ba2); }
+      .card { width: 100%; max-width: 680px; background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.15); padding: 28px; }
+      h1 { display: flex; align-items: center; gap: 10px; font-size: 24px; color: #222; margin-bottom: 10px; }
+      p.lead { color: #666; margin-bottom: 20px; }
+      .drop { border: 2px dashed #cfd3ff; border-radius: 12px; padding: 28px; text-align: center; transition: .2s; cursor: pointer; }
+      .drop:hover, .drop.dragover { background: #f7f7ff; border-color: #667eea; }
+      .drop i { font-size: 44px; color: #667eea; margin-bottom: 12px; }
+      .btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 12px 18px; border-radius: 999px; font-weight: 600; cursor: pointer; transition: transform .15s, box-shadow .15s; }
+      .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
+      .btn:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; transform: none; }
+      .hidden { display: none !important; }
+      .preview { margin-top: 18px; display: none; }
+      .preview img { max-width: 100%; max-height: 320px; border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+      .bar { height: 6px; background: #f0f1ff; border-radius: 999px; overflow: hidden; margin: 16px 0; display: none; }
+      .bar > span { display: block; height: 100%; width: 0%; background: linear-gradient(135deg, #667eea, #764ba2); transition: width .25s; }
+      .out { margin-top: 16px; display: none; }
+      .linkbox { display: flex; gap: 8px; }
+      .linkbox input { flex: 1; padding: 12px; border: 1px solid #e6e6ef; border-radius: 10px; font-size: 14px; }
+      .alert { padding: 12px; border-radius: 10px; margin-top: 12px; font-size: 14px; }
+      .alert.ok { background: #e8f7ed; color: #165b31; }
+      .alert.err { background: #fde8ea; color: #7a1d26; }
+      .tips { margin-top: 18px; background: #f8f9ff; border: 1px dashed #e0e4ff; padding: 14px; border-radius: 12px; color: #444; font-size: 14px; }
+      .tips ul { margin-left: 18px; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1><i class="fa-solid fa-cloud-arrow-up"></i> Upload Foto Jadi Link</h1>
+      <p class="lead">Unggah foto Anda dan dapatkan tautan publik (Vercel Blob) yang bisa langsung dibagikan.</p>
+
+      <div class="drop" id="drop">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <p>Klik di sini atau seret foto ke area ini</p>
+        <br />
+        <button class="btn" id="chooseBtn"><i class="fa-solid fa-file-arrow-up"></i> Pilih Foto</button>
+        <input type="file" id="file" accept="image/*" class="hidden" />
+      </div>
+
+      <div class="preview" id="preview"><img id="img" alt="pratinjau" /></div>
+      <div class="bar" id="bar"><span id="progress"></span></div>
+
+      <div style="margin-top: 8px; display:flex; gap:8px;">
+        <button class="btn" id="uploadBtn" disabled><i class="fa-solid fa-upload"></i> Upload ke Vercel</button>
+        <button class="btn" id="copyBtn" disabled><i class="fa-solid fa-copy"></i> Salin Link</button>
+      </div>
+
+      <div class="out" id="out">
+        <div class="linkbox">
+          <input id="url" readonly />
+        </div>
+        <div class="alert ok hidden" id="ok"><i class="fa-solid fa-circle-check"></i> Link disalin ke clipboard.</div>
+        <div class="alert err hidden" id="err"><i class="fa-solid fa-triangle-exclamation"></i> <span id="errtxt"></span></div>
+      </div>
+
+      <div class="tips">
+        <strong>Catatan:</strong>
+        <ul>
+          <li>Dukungan: JPG, PNG, GIF, WebP. Maks 5MB.</li>
+          <li>File disimpan di Vercel Blob Storage dan menghasilkan URL publik.</li>
+          <li>Halaman ini murni HTML/JS dan memanggil <code>/api/upload</code> di backend.</li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById('file');
+      const drop = document.getElementById('drop');
+      const chooseBtn = document.getElementById('chooseBtn');
+      const preview = document.getElementById('preview');
+      const img = document.getElementById('img');
+      const bar = document.getElementById('bar');
+      const progress = document.getElementById('progress');
+      const uploadBtn = document.getElementById('uploadBtn');
+      const copyBtn = document.getElementById('copyBtn');
+      const out = document.getElementById('out');
+      const url = document.getElementById('url');
+      const ok = document.getElementById('ok');
+      const err = document.getElementById('err');
+      const errtxt = document.getElementById('errtxt');
+
+      let selectedFile = null;
+
+      function showError(message) {
+        errtxt.textContent = message;
+        err.classList.remove('hidden');
+        ok.classList.add('hidden');
+      }
+      function clearError() { err.classList.add('hidden'); }
+
+      chooseBtn.addEventListener('click', () => fileInput.click());
+
+      drop.addEventListener('click', () => fileInput.click());
+      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+      drop.addEventListener('drop', (e) => {
+        e.preventDefault(); drop.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+      });
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files[0]) handleFile(fileInput.files[0]);
+      });
+
+      function handleFile(file) {
+        clearError();
+        const allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+        if (!allowed.includes(file.type)) return showError('Hanya gambar (JPG/PNG/GIF/WebP).');
+        if (file.size > 5 * 1024 * 1024) return showError('Maksimal 5MB.');
+
+        selectedFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => { img.src = e.target.result; preview.style.display = 'block'; };
+        reader.readAsDataURL(file);
+        uploadBtn.disabled = false;
+      }
+
+      uploadBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        clearError();
+        url.value = '';
+        out.style.display = 'block';
+        bar.style.display = 'block';
+        progress.style.width = '0%';
+        uploadBtn.disabled = true; copyBtn.disabled = true;
+
+        try {
+          const fd = new FormData();
+          fd.append('file', selectedFile);
+
+          let p = 0; const sim = setInterval(() => { p = Math.min(100, p + 7); progress.style.width = p + '%'; }, 120);
+
+          const res = await fetch('/api/upload', { method: 'POST', body: fd });
+          clearInterval(sim); progress.style.width = '100%';
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Upload gagal');
+          }
+          const data = await res.json();
+          url.value = data.url;
+          copyBtn.disabled = false;
+          await navigator.clipboard.writeText(data.url).catch(() => {});
+          ok.classList.remove('hidden');
+        } catch (e) {
+          showError(e.message || String(e));
+        } finally {
+          setTimeout(() => { bar.style.display = 'none'; }, 600);
+          uploadBtn.disabled = false;
+        }
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(url.value); ok.classList.remove('hidden'); }
+        catch { showError('Gagal menyalin link'); }
+      });
+    </script>
+  </body>
+</html>
