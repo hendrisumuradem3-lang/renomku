@@ -184,6 +184,15 @@
             display: none;
         }
         
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+            display: none;
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -239,6 +248,10 @@
             <i class="fas fa-check-circle"></i> Foto berhasil diupload! Link telah disalin ke clipboard.
         </div>
         
+        <div class="error-message" id="error-message">
+            <i class="fas fa-exclamation-circle"></i> <span id="error-text"></span>
+        </div>
+        
         <div class="link-container" id="link-container">
             <h3>Link Foto Anda</h3>
             <p>Salin link berikut untuk berbagi foto:</p>
@@ -253,8 +266,8 @@
             <ul>
                 <li>Hanya file gambar (JPG, PNG, GIF) yang didukung</li>
                 <li>Maksimum ukuran file: 5MB</li>
-                <li>File akan dihapus secara otomatis setelah 30 hari</li>
-                <li>Layanan ini menggunakan Vercel Blob Storage untuk penyimpanan</li>
+                <li>Link yang dihasilkan adalah Data URL yang berisi gambar Anda</li>
+                <li>Untuk penyimpanan permanen, Anda perlu backend server</li>
             </ul>
         </div>
     </div>
@@ -272,6 +285,8 @@
             const progressBar = document.getElementById('progress-bar');
             const progress = document.getElementById('progress');
             const successMessage = document.getElementById('success-message');
+            const errorMessage = document.getElementById('error-message');
+            const errorText = document.getElementById('error-text');
             
             let selectedFile = null;
             
@@ -322,13 +337,13 @@
             function handleFile(file) {
                 // Validasi tipe file
                 if (!file.type.match('image.*')) {
-                    alert('Hanya file gambar yang diizinkan!');
+                    showError('Hanya file gambar yang diizinkan!');
                     return;
                 }
                 
                 // Validasi ukuran file (maks 5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('Ukuran file tidak boleh lebih dari 5MB!');
+                    showError('Ukuran file tidak boleh lebih dari 5MB!');
                     return;
                 }
                 
@@ -348,6 +363,7 @@
                 // Sembunyikan link container jika ada
                 linkContainer.style.display = 'none';
                 successMessage.style.display = 'none';
+                errorMessage.style.display = 'none';
             }
             
             function uploadFile() {
@@ -357,8 +373,9 @@
                 progressBar.style.display = 'block';
                 progress.style.width = '0%';
                 uploadBtn.disabled = true;
+                errorMessage.style.display = 'none';
                 
-                // Simulasi upload (dalam implementasi nyata, ini akan mengupload ke Vercel Blob Storage)
+                // Simulasi upload progress
                 simulateUpload();
             }
             
@@ -371,39 +388,50 @@
                     if (progressValue >= 100) {
                         clearInterval(interval);
                         
-                        // Simulasi link yang dihasilkan
-                        // Dalam implementasi nyata, ini akan menjadi URL dari Vercel Blob Storage
-                        const domain = "https://vercel-blob-store.com";
-                        const randomId = Math.random().toString(36).substring(2, 10);
-                        const mockLink = `${domain}/uploads/${randomId}_${selectedFile.name}`;
-                        linkOutput.value = mockLink;
-                        linkContainer.style.display = 'block';
-                        
-                        // Sembunyikan progress bar
-                        setTimeout(() => {
-                            progressBar.style.display = 'none';
-                        }, 500);
-                        
-                        // Otomatis salin link ke clipboard
-                        linkOutput.select();
-                        document.execCommand('copy');
-                        
-                        // Tampilkan pesan sukses
-                        successMessage.style.display = 'block';
-                        
-                        // Reset form setelah 5 detik
-                        setTimeout(() => {
-                            successMessage.style.display = 'none';
-                            previewContainer.style.display = 'none';
-                            linkContainer.style.display = 'none';
-                            fileInput.value = '';
-                            uploadBtn.disabled = true;
-                            selectedFile = null;
-                        }, 5000);
+                        // Generate Data URL dari file
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const dataUrl = e.target.result;
+                            linkOutput.value = dataUrl;
+                            linkContainer.style.display = 'block';
+                            
+                            // Sembunyikan progress bar
+                            setTimeout(() => {
+                                progressBar.style.display = 'none';
+                            }, 500);
+                            
+                            // Otomatis salin link ke clipboard
+                            linkOutput.select();
+                            document.execCommand('copy');
+                            
+                            // Tampilkan pesan sukses
+                            successMessage.style.display = 'block';
+                            
+                            // Reset form setelah 5 detik
+                            setTimeout(() => {
+                                successMessage.style.display = 'none';
+                                previewContainer.style.display = 'none';
+                                linkContainer.style.display = 'none';
+                                fileInput.value = '';
+                                uploadBtn.disabled = true;
+                                selectedFile = null;
+                            }, 5000);
+                        };
+                        reader.readAsDataURL(selectedFile);
                     }
                 }, 100);
+            }
+            
+            function showError(message) {
+                errorText.textContent = message;
+                errorMessage.style.display = 'block';
+                
+                // Sembunyikan pesan error setelah 5 detik
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 5000);
             }
         });
     </script>
 </body>
-</html>
+</html
