@@ -266,8 +266,8 @@
             <ul>
                 <li>Hanya file gambar (JPG, PNG, GIF) yang didukung</li>
                 <li>Maksimum ukuran file: 5MB</li>
-                <li>Link yang dihasilkan adalah Data URL yang berisi gambar Anda</li>
-                <li>Untuk penyimpanan permanen, Anda perlu backend server</li>
+                <li>Foto disimpan di browser Anda (localStorage)</li>
+                <li>Link hanya bekerja di browser yang sama</li>
             </ul>
         </div>
     </div>
@@ -392,7 +392,16 @@
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             const dataUrl = e.target.result;
-                            linkOutput.value = dataUrl;
+                            
+                            // Simpan ke localStorage dengan ID unik
+                            const imageId = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                            localStorage.setItem(imageId, dataUrl);
+                            
+                            // Buat URL untuk dibagikan (hanya bekerja di browser yang sama)
+                            const currentUrl = window.location.href.split('?')[0];
+                            const shareableUrl = currentUrl + '?image=' + imageId;
+                            
+                            linkOutput.value = shareableUrl;
                             linkContainer.style.display = 'block';
                             
                             // Sembunyikan progress bar
@@ -431,7 +440,24 @@
                     errorMessage.style.display = 'none';
                 }, 5000);
             }
+            
+            // Cek jika URL berisi parameter image
+            const urlParams = new URLSearchParams(window.location.search);
+            const imageId = urlParams.get('image');
+            
+            if (imageId) {
+                const savedImage = localStorage.getItem(imageId);
+                if (savedImage) {
+                    // Tampilkan gambar yang dibagikan
+                    previewImage.src = savedImage;
+                    previewContainer.style.display = 'block';
+                    linkOutput.value = window.location.href;
+                    linkContainer.style.display = 'block';
+                } else {
+                    showError('Foto tidak ditemukan. Mungkin sudah dihapus atau kadaluwarsa.');
+                }
+            }
         });
     </script>
 </body>
-</html
+</html>
